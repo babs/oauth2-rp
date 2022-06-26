@@ -1,0 +1,28 @@
+{
+  "name": "oauth2-rp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Damien Degois",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "access-log": "^0.4.1",
+    "client-oauth2": "^4.3.3",
+    "console-stamp": "^3.0.6",
+    "dotenv": "^16.0.1",
+    "express": "^4.18.1",
+    "got": "^12.1.0",
+    "http-proxy": "^1.18.1",
+    "libsodium-wrappers": "^0.7.10",
+    "lru-cache": "^7.10.1",
+    "node-http-proxy": "^0.2.4",
+    "popsicle": "^12.1.0",
+    "uuid": "^8.3.2",
+    "uuidv4": "^6.2.13"
+  }
+}
