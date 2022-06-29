@@ -92,9 +92,17 @@ function handleAuthCB(req, res, cookies) {
 
 const app = (req, res) => {
   accesslog(req, res);
+
+  // Api call with token => no OAuth
+  if ((req.headers['x-rundeck-auth-token'] || req.url.indexOf('authtoken=') !== -1) && req.url.startsWith('/api/')) {
+    proxy.web(req, res, (err) => {
+      res.writeHead(502);
+      res.end("There was an error proxying your request");
+    });
+    return
+  }
+
   const cookies = parseCookies(req);
-
-
   if (req.url.startsWith('/oauth/callback')) {
     handleAuthCB(req, res, cookies)
     return;
@@ -136,11 +144,18 @@ const app = (req, res) => {
 };
 
 proxy.on('proxyReq', (proxyReq, req, res, options) => {
-  const cookies = parseCookies(req);
-  let sessionid = cookies['_oauth_session'];
-  let sessdata = sessionstore.get(sessionid);
-  proxyReq.setHeader('X-Forwarded-Uuid', sessdata['username']);
-  proxyReq.setHeader('X-Forwarded-Roles', sessdata['roles'].join(','));
+
+  ['X-Forwarded-Uuid', 'X-Forwarded-Roles', 'X-Forwarded-User-FirstName', 'X-Forwarded-User-LastName', 'X-Forwarded-User-Email'].forEach((headerToRemove) => {
+    proxyReq.removeHeader(headerToRemove);
+  });
+
+  if ( ( !req.headers['x-rundeck-auth-token'] && req.url.indexOf('authtoken=') === -1 ) || ! req.url.startsWith('/api/')) {
+    const cookies = parseCookies(req);
+    let sessionid = cookies['_oauth_session'];
+    let sessdata = sessionstore.get(sessionid);
+    proxyReq.setHeader('X-Forwarded-Uuid', sessdata['username']);
+    proxyReq.setHeader('X-Forwarded-Roles', sessdata['roles'].join(','));
+  }
 });
 
 
