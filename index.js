@@ -84,8 +84,8 @@ function handleAuthCB(req, res, cookies) {
       res.end(`<a href="${returl}">/</a>`);
     }).catch((error) => {
       console.log(error);
-      res.writeHead(500, {'content-type': 'application/json'})
-      res.end(JSON.stringify(error));
+      res.writeHead(500, {'content-type': 'text/html'})
+      res.end(`SSO returned an error. please contact SSO admin or retry.<br/><br/><a href="/">Home page</a>`);
     });
 }
 
