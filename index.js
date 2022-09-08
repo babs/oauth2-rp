@@ -14,7 +14,6 @@ import fs from 'fs';
 import 'dotenv/config';
 
 const sessionstore = new LRUCache({ttl: 86400*1000, ttlAutopurge: true});
-const KEY = Buffer.from(process.env.SECRET_KEY, 'base64');
 
 const oa2c = new ClientOAuth2({
   clientId: process.env.CLIENT_ID,
@@ -24,6 +23,7 @@ const oa2c = new ClientOAuth2({
   redirectUri: process.env.REDIRECT_URI,
   scopes: process.env.SCOPES,
 })
+const LOGOUT_URI = process.env.LOGOUT_URI || '';
 
 
 function parseCookies (request) {
@@ -43,13 +43,13 @@ function parseCookies (request) {
   return list;
 }
 
-
 const proxyConfig = {
   target: process.env.RP_TARGET,
+  secure: process.env.SECURE == "false" ? false : true,
 };
-const proxy = new createProxyServer(proxyConfig);
 
-const rolere = /^CN=(rundeck-[^,]+),/i;
+const proxy = new createProxyServer(proxyConfig);
+const rolere = new RegExp(`^CN=(${process.env.ROLE_RADIX||"rundeck"}-[^,]+),`,'i')
 
 function handleAuthCB(req, res, cookies) {
   const queryData = url.parse(req.url, true).query;
@@ -69,6 +69,9 @@ function handleAuthCB(req, res, cookies) {
           roles.push(matchres[1]);
         }
       });
+      if (roles.length == 0) {
+        roles.push('none');
+      }
       let userinfos = {
         username: resp.attributes.sAMAccountName[0],
         roles,
@@ -98,24 +101,39 @@ const app = (req, res) => {
     proxy.web(req, res, (err) => {
       res.writeHead(502);
       res.end("There was an error proxying your request");
+      console.log(err);
     });
-    return
+    return;
   }
 
   const cookies = parseCookies(req);
+  let sessionid = cookies['_oauth_session'];
   if (req.url.startsWith('/oauth/callback')) {
     handleAuthCB(req, res, cookies)
     return;
   }
 
   if (req.url.startsWith('/oauth/logout')) {
-    res.setHeader('Set-Cookie', [`_oauth_session=; Max-Age=-86400; Path=/`,]);
+    res.setHeader('Set-Cookie', [
+      `_oauth_session=; Max-Age=-86400; Path=/`,
+      `JSESSIONID=; Max-Age=-86400; Path=/`,
+    ]);
+    sessionstore.delete(sessionid);
+    if (LOGOUT_URI != "") {
+      res.end(`<a href="/">Back to home page.</a><iframe style="width: 0; height: 0; border: 0; border: none; position: absolute;" src="${LOGOUT_URI}" onload="location.href='/'"/>`);
+    } else {
+      res.writeHead(302, {'Location': '/'});
+      res.end(`<a href="/">Back to home page.</a>`);
+    }
+    return;
+  }
+
+  if (req.url.startsWith('/user/login')) {
     res.writeHead(302, {'Location': '/'});
     res.end(`<a href="/">/</a>`);
     return;
   }
 
-  let sessionid = cookies['_oauth_session'];
   let sessdata = sessionstore.get(sessionid);
 
   if (sessionid == null || sessdata == null || sessdata['exipreAt'] < Date.now()) {
@@ -138,6 +156,7 @@ const app = (req, res) => {
       proxy.web(req, res, (err) => {
       res.writeHead(502);
       res.end("There was an error proxying your request");
+      console.log(err);
     });
   }
 
