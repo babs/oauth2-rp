@@ -13,6 +13,12 @@ import accesslog from 'access-log';
 import fs from 'fs';
 import 'dotenv/config';
 
+import nunjucks from 'nunjucks';
+
+nunjucks.configure('templates', {
+  autoescape: false,
+});
+
 const sessionstore = new LRUCache({ttl: 86400*1000, ttlAutopurge: true});
 
 const oa2c = new ClientOAuth2({
@@ -119,12 +125,7 @@ const app = (req, res) => {
       `JSESSIONID=; Max-Age=-86400; Path=/`,
     ]);
     sessionstore.delete(sessionid);
-    if (LOGOUT_URI != "") {
-      res.end(`<a href="/">Back to home page.</a><iframe style="width: 0; height: 0; border: 0; border: none; position: absolute;" src="${LOGOUT_URI}" onload="location.href='/'"/>`);
-    } else {
-      res.writeHead(302, {'Location': '/'});
-      res.end(`<a href="/">Back to home page.</a>`);
-    }
+    res.end(nunjucks.render('logout.html', {LOGOUT_URI: LOGOUT_URI}))
     return;
   }
 
@@ -161,6 +162,7 @@ const app = (req, res) => {
   }
 
 };
+
 
 proxy.on('proxyReq', (proxyReq, req, res, options) => {
 

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" charset="utf-8">
+  <head>
+    <script>
+      document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
+      ':35729/livereload.js?snipver=1"></' + 'script>')
+    </script>
+    <meta charset="utf-8">
+    <title>Logged out</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        height: 100vh;
+        background-color: #f5f5f5;
+        box-sizing: border-box;
+      }
+      .logoutbox {
+        background-color: #fff;
+        border-radius: .5rem;
+        box-shadow: 0 .5rem 1rem -.125rem rgb(10,10,10);
+        color: #4a4a4a;
+        display: block;
+        padding: 1.25rem;
+        text-align: center;
+        max-width: 400px;
+        margin: 5rem auto;
+      }
+      .login {
+        margin: 2rem 0;
+      }
+      .message {
+        font-size: 2rem;
+        margin: 2rem auto;
+      }
+      .button {
+        display: block;
+        text-decoration: none;
+        font-size: 1.25rem;
+        background-color: #ff4f4f;
+        color: #fff;
+        padding: .25em 1.25em;
+        border-radius: .5rem;
+        max-width: 100px;
+        margin: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logoutbox">
+      <div class="message">Logout successfull</div>
+      <div class="login">
+        <a class="button" href="/">Login</a>
+      </div>
+    </div>
+{% if LOGOUT_URI %}
+    <iframe style="width: 0; height: 0; border: 0; border: none; position: absolute;" src="{{ LOGOUT_URI }}"/>
+{% endif %}
+  </body>
+</html>
