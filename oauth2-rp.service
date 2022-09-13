@@ -1,0 +1,15 @@
+[Unit]
+Description=oauth2-rp
+
+[Service]
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+User=oauth2-rp
+Type=simple
+RemainAfterExit=no
+WorkingDirectory=/opt/oauth2-rp/
+ExecStart=node index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

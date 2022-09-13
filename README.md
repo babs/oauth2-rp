@@ -53,6 +53,21 @@ KEY_FILE=certs/key.pem
 CERT_FILE=certs/cert.pem
 ```
 
+## Installation
+
+```bash
+git clone https://github.com/babs/oauth2-rp.git /opt/oauth2-rp
+cd /opt/oauth2-rp; pnpm i || yarn install || npm i # based on the pm you have/prefer
+adduser --system oauth2-rp --home /opt/oauth2-rp
+usermod -a -G ssl-cert oauth2-rp # for key/cert access
+ln -s /opt/oauth2-rp/oauth2-rp.service /etc/systemd/system/oauth2-rp.service
+# Create and customize your /opt/oauth2-rp/.env file (see env.dist)
+# Once done, reload systemctl and start the service
+systemctl daemon-reload
+systemctl enable --now oauth2-rp || systemctl start oauth2-rp
+systemctl status oauth2-rp
+```
+
 ## Todo
 
 - [ ] Use NaCL secret box to make the proxy fully stateless
