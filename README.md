@@ -15,14 +15,14 @@ CLIENT_SECRET=''
 ACCESS_TOKEN_URI=http://localhost:8080/auth/realms/testrealm/protocol/openid-connect/token
 AUTHORIZATION_URI=http://localhost:8080/auth/realms/testrealm/protocol/openid-connect/auth
 USERINFO_URI=http://localhost:8080/auth/realms/testrealm/protocol/openid-connect/userinfo
-LOGOUT_URI=http://localhost:8080/auth/realms/testrealm/protocol/openid-connect/logout
+LOGOUT_URI='http://localhost:8080/auth/realms/testrealm/protocol/openid-connect/logout?id_token_hint={id_token}'
 SCOPES='basic'
 
 ROLE_RADIX=rundeck
 ```
 
-* `ROLE_RADIX` is used as part of a regexp (`^CN=(${process.env.ROLE_RADIX||"rundeck"}-[^,]+),`) to filter groups (default: `rundeck`, therefore groups should start with `rundeck-`. ie: `rundeck-admin`)
-* `LOGOUT_URI`: if provided, the URI will be called as target of an iframe on the logout page. This allows the browser to trigger a logout on the SSO side.
+* `ROLE_RADIX` is used as part of a regexp (`^(${process.env.ROLE_RADIX||"rundeck"}-[^,]+)`) to filter groups (default: `rundeck`, therefore groups should start with `rundeck-`. ie: `rundeck-admin`)
+* `LOGOUT_URI`: if provided, the URI will be called as target of an iframe on the logout page. This allows the browser to trigger a logout on the SSO side. `{id_token}` is used as placeholder for the `id_token`.
 
 ### Secret generation
 
@@ -66,6 +66,18 @@ ln -s /opt/oauth2-rp/oauth2-rp.service /etc/systemd/system/oauth2-rp.service
 systemctl daemon-reload
 systemctl enable --now oauth2-rp || systemctl start oauth2-rp
 systemctl status oauth2-rp
+```
+
+## rundeck-config.properties example
+
+```bash
+rundeck.security.authorization.preauthenticated.enabled=true
+rundeck.security.authorization.preauthenticated.redirectLogout=true
+rundeck.security.authorization.preauthenticated.redirectUrl=/oauth/logout
+rundeck.security.authorization.preauthenticated.userNameHeader=X-Forwarded-User
+rundeck.security.authorization.preauthenticated.userRolesHeader=X-Forwarded-Groups
+rundeck.logout.redirect.url=https://public_hostname/oauth/logout
+rundeck.login.localLogin.enabled=false
 ```
 
 ## Todo

@@ -55,12 +55,14 @@ const proxyConfig = {
 };
 
 const proxy = new createProxyServer(proxyConfig);
-const rolere = new RegExp(`^CN=(${process.env.ROLE_RADIX||"rundeck"}-[^,]+),`,'i')
+const rolere = new RegExp(`^(${process.env.ROLE_RADIX||"rundeck"}-[^,]+)`,'i')
 
 function handleAuthCB(req, res, cookies) {
   const queryData = url.parse(req.url, true).query;
+  let id_token;
   return oa2c.code.getToken(req.url)
     .then(function (user) {
+      id_token = user.data.id_token;
       return got.get(
         user.sign({
           url: process.env.USERINFO_URI,
@@ -69,7 +71,7 @@ function handleAuthCB(req, res, cookies) {
     }).then((resp) => {
       let roles = [];
 
-      resp.attributes.memberOf.forEach((e) => {
+      resp.roles.forEach((e) => {
         let matchres = e.match(rolere);
         if (matchres != null) {
           roles.push(matchres[1]);
@@ -79,9 +81,10 @@ function handleAuthCB(req, res, cookies) {
         roles.push('none');
       }
       let userinfos = {
-        username: resp.attributes.sAMAccountName[0],
+        username: resp.user,
         roles,
         exipreAt: Date.now()+86400000,
+        id_token,
       };
       sessionstore.set(queryData.state, userinfos);
       let returl = cookies['_oauth_return'] || '/';
@@ -120,12 +123,14 @@ const app = (req, res) => {
   }
 
   if (req.url.startsWith('/oauth/logout')) {
+    let sessdata = sessionstore.get(sessionid);
+
     res.setHeader('Set-Cookie', [
       `_oauth_session=; Max-Age=-86400; Path=/`,
       `JSESSIONID=; Max-Age=-86400; Path=/`,
     ]);
     sessionstore.delete(sessionid);
-    res.end(nunjucks.render('logout.html', {LOGOUT_URI: LOGOUT_URI}))
+    res.end(nunjucks.render('logout.html', {LOGOUT_URI: LOGOUT_URI.replace('{id_token}', sessdata.id_token)}))
     return;
   }
 
@@ -166,7 +171,7 @@ const app = (req, res) => {
 
 proxy.on('proxyReq', (proxyReq, req, res, options) => {
 
-  ['X-Forwarded-Uuid', 'X-Forwarded-Roles', 'X-Forwarded-User-FirstName', 'X-Forwarded-User-LastName', 'X-Forwarded-User-Email'].forEach((headerToRemove) => {
+  ['X-Forwarded-User', 'X-Forwarded-Groups', 'X-Forwarded-User-FirstName', 'X-Forwarded-User-LastName', 'X-Forwarded-User-Email'].forEach((headerToRemove) => {
     proxyReq.removeHeader(headerToRemove);
   });
 
@@ -174,8 +179,8 @@ proxy.on('proxyReq', (proxyReq, req, res, options) => {
     const cookies = parseCookies(req);
     let sessionid = cookies['_oauth_session'];
     let sessdata = sessionstore.get(sessionid);
-    proxyReq.setHeader('X-Forwarded-Uuid', sessdata['username']);
-    proxyReq.setHeader('X-Forwarded-Roles', sessdata['roles'].join(','));
+    proxyReq.setHeader('X-Forwarded-User', sessdata['username']);
+    proxyReq.setHeader('X-Forwarded-Groups', sessdata['roles'].join(','));
   }
 });
 
