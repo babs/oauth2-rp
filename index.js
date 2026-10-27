@@ -6,7 +6,7 @@ import https from 'https';
 import createProxyServer from 'http-proxy';
 import ClientOAuth2 from 'client-oauth2';
 import got from 'got';
-import { v4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import url from 'node:url';
 import LRUCache from 'lru-cache';
 import accesslog from 'access-log';
@@ -143,7 +143,7 @@ const app = (req, res) => {
   let sessdata = sessionstore.get(sessionid);
 
   if (sessionid == null || sessdata == null || sessdata['exipreAt'] < Date.now()) {
-    const rdruri = oa2c.code.getUri({state: v4()});
+    const rdruri = oa2c.code.getUri({state: randomUUID()});
     res.setHeader('Set-Cookie', [
       `_oauth_session=; Max-Age=-86400; Path=/`,
       `_oauth_return=${req.url}; Max-Age=300; Path=/`,
